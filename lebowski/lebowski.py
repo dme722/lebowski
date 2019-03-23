@@ -20,7 +20,7 @@ class _LazyLoader(types.ModuleType):
 
     # The lint error here is incorrect.
     def __init__(self, import_func, name, globals=None, locals=None, fromlist=(), level=0):  # pylint: disable=super-on-old-class
-        super(LazyLoader, self).__init__(name)
+        super(_LazyLoader, self).__init__(name)
 
         self.name = name
         self.globals = globals
@@ -36,7 +36,7 @@ class _LazyLoader(types.ModuleType):
         
         module = self.import_func(self.name, self.globals, self.locals, self.fromlist, self.level)
 
-        builtins.__import__ = import_decorator(builtins.__import__)
+        builtins.__import__ = _import_decorator(builtins.__import__)
 
         return module
 
@@ -51,7 +51,7 @@ class _LazyLoader(types.ModuleType):
 def _import_decorator(original_import):
     @wraps(original_import)
     def decorated(name, globals=None, locals=None, fromlist=(), level=0):
-        return LazyLoader(original_import, name,globals,locals,fromlist,level)
+        return _LazyLoader(original_import, name,globals,locals,fromlist,level)
 
     return decorated
 
