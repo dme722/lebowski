@@ -7,7 +7,9 @@ from __future__ import print_function
 import importlib
 import types
 import builtins
+import sys
 import pdb
+import copy
 
 from functools import wraps
 
@@ -31,16 +33,33 @@ class _LazyLoader(types.ModuleType):
         self.base_name = name.split('.')[0]
 
     def _load(self):
-        # Import the target module
         builtins.__import__ = self.import_func
         
         module = self.import_func(self.name, self.globals, self.locals, self.fromlist, self.level)
+        base_parts = self.base_name.split('.')
+        if len(base_parts) > 1:
+            submods = base_parts[1:]
+            for submod in submods:
+                module = getattr(module, submod)
 
         builtins.__import__ = _import_decorator(builtins.__import__)
 
         return module
 
     def __getattr__(self, item):
+        builtins.__import__ = self.import_func
+        if item == '__path__':
+            return sys.path
+
+        try:
+            if importlib.util.find_spec(self.base_name + '.' + item):
+                self.base_name+= '.' + item
+                return self
+        except Exception:
+            pass
+
+        builtins.__import__ = _import_decorator(builtins.__import__)
+
         module = self._load()
         return getattr(module, item)
 
